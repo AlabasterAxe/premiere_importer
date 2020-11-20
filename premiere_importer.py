@@ -20,13 +20,13 @@ from bpy.props import (
     IntProperty,
 )
 from bpy.types import PropertyGroup, Operator
-from bpy_extras.io_utils import ImportHelper, ExportHelpe
+from bpy_extras.io_utils import ImportHelper, ExportHelper
 
 bl_info = {
     "name": "Premiere Importer",
     "author": "Matt Keller <matthew.ed.keller@gmail.com>",
     "version": (0, 1, 0),
-    "blender": (2, 90, 1),
+    "blender": (2, 83, 1),
     "location": "File > Import > Premiere (.xml)",
     "description": "Import Premiere XML files into Blender",
     "warning": "Safety not guaranteed.",
@@ -38,6 +38,10 @@ bl_info = {
 
 
 def import_premiere_file(filepath, media_dir_path):
+    print("Premiere File:")
+    print(filepath)
+    print("Media Directory:")
+    print(media_dir_path)
     root = ElementTree.parse(filepath).getroot()
 
     seq = root.find("sequence")
@@ -104,10 +108,10 @@ class IMPORT_OT_premiere(Operator, ImportHelper):
 
     def execute(self, context):
         # This is in order to solve this strange 'relative path' thing.
-        filepath_pdb = bpy.path.abspath(self.filepath)
+        abs_filepath = bpy.path.abspath(self.filepath)
 
         # Execute main routine
-        import_premiere_file(filepath_pdb, bpy.path.abspath("//../raw/"))
+        import_premiere_file(abs_filepath, bpy.path.abspath("//../raw/"))
 
         return {'FINISHED'}
 
@@ -120,4 +124,15 @@ def menu_func_import_premiere_xml(self, context):
 def register():
     from bpy.utils import register_class
 
+    register_class(IMPORT_OT_premiere)
     bpy.types.TOPBAR_MT_file_import.append(menu_func_import_premiere_xml)
+
+def unregister():
+    from bpy.utils import unregister_class
+    bpy.types.TOPBAR_MT_file_import.remove(menu_func_import_premiere_xml)
+
+    unregister_class(IMPORT_OT_premiere)
+
+
+if __name__ == "__main__":
+    register()
