@@ -37,12 +37,14 @@ bl_info = {
 }
 
 
-def import_premiere_file(filepath, media_dir_path):
+def import_premiere_file(context, filepath, media_dir_path):
     root = ElementTree.parse(filepath).getroot()
     
     seq = root.find("sequence")
 
-    scene = bpy.context.scene
+    scene = context.scene
+
+    # This ensures that there is a valid sequence editor on this scene.
     scene.sequence_editor_create()
 
     scene.frame_end = int(seq.find("duration").text)
@@ -142,7 +144,8 @@ class IMPORT_OT_premiere(Operator, ImportHelper):
         abs_filepath = bpy.path.abspath(self.filepath)
 
         # Execute main routine
-        import_premiere_file(abs_filepath, bpy.path.abspath("//../raw/"))
+        import_premiere_file(context, abs_filepath,
+                             bpy.path.abspath("//../raw/"))
 
         return {'FINISHED'}
 
@@ -157,6 +160,7 @@ def register():
 
     register_class(IMPORT_OT_premiere)
     bpy.types.TOPBAR_MT_file_import.append(menu_func_import_premiere_xml)
+
 
 def unregister():
     from bpy.utils import unregister_class
