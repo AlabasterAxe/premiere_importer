@@ -38,15 +38,12 @@ bl_info = {
 
 
 def import_premiere_file(filepath, media_dir_path):
-    print("Premiere File:")
-    print(filepath)
-    print("Media Directory:")
-    print(media_dir_path)
     root = ElementTree.parse(filepath).getroot()
-
+    
     seq = root.find("sequence")
 
     scene = bpy.context.scene
+    scene.sequence_editor_create()
 
     scene.frame_end = int(seq.find("duration").text)
     scene.render.resolution_x = int(seq.find("width").text)
@@ -76,6 +73,9 @@ def import_premiere_file(filepath, media_dir_path):
     sounds = {}
 
     for track in audio_tracks:
+        clipstarts = {}
+
+        clipends = {}
         for clip in track.findall("clipitem"):
             filename = clip.find("name").text
             newseq = scene.sequence_editor.sequences.new_sound(
@@ -94,6 +94,37 @@ def import_premiere_file(filepath, media_dir_path):
             newseq.frame_final_duration = int(
                 clip.find("end").text) - int(clip.find("start").text)
             newseq.show_waveform = True
+
+            clipstarts[newseq.frame_final_start] = newseq
+            clipends[newseq.frame_final_end] = newseq
+
+        for transition in track.findall("transitionitem"):
+            startFrame = int(transition.find("start").text)
+            endFrame = int(transition.find("end").text)
+
+            correspondingSequence = clipstarts.get(startFrame)
+            isBeginning = True
+            if not correspondingSequence:
+                correspondingSequence = clipends.get(endFrame)
+                isBeginning = False
+
+            if not correspondingSequence:
+              print("Something's gone horribly wrong...")
+
+            if isBeginning:
+                correspondingSequence.volume = 0
+                correspondingSequence.keyframe_insert(data_path="volume", frame=startFrame)
+
+                correspondingSequence.volume = 1
+                correspondingSequence.keyframe_insert(data_path="volume", frame=endFrame)
+
+            else:
+                correspondingSequence.volume = 1
+                correspondingSequence.keyframe_insert(data_path="volume", frame=startFrame)
+
+                correspondingSequence.volume = 0
+                correspondingSequence.keyframe_insert(data_path="volume", frame=endFrame)
+            
         tracknum += 1
 
 
